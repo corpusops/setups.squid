@@ -1,0 +1,1 @@
+# squid docker based setup

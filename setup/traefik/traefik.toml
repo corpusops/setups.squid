@@ -1,0 +1,12 @@
+checkNewVersion = false
+sendAnonymousUsage = false
+debug = true
+log = {level="DEBUG",format="json"}
+accessLog = {bufferingSize=10,format="json"}
+providers.file={watch=true,filename="/etc/traefik/config.toml"}
+ping={entryPoint="proxy"}
+api={dashboard=true,insecure=true}  
+[entryPoints.proxy]
+address=":80"
+forwardedHeaders={trustedIPs=["10.0.0.0/8","172.16.0.0/12","192.168.0.0/16"]}
+proxyProtocol   ={trustedIPs=["10.0.0.0/8","172.16.0.0/12","192.168.0.0/16"]} 

@@ -1,0 +1,16 @@
+
+- include_role: {name: corpusops.roles/docker_compose_service}
+  vars:
+    _docker_compose_service:
+      project: "{{cops_squid_compose_project}}"
+      state: "{{cops_squid_stopped_state}}"
+      working_directory: "{{cops_squid_hostdir}}"
+      stdout: "{{cops_squid_stdout}}"
+      stderr: "{{cops_squid_stderr}}"
+  tags: [service_stop]
+- shell: |-
+    set -ex
+    if [ ! -e "{{cops_squid_hostdir}}/{{cops_squid_compose_files[0]}}" ];then exit 0;fi
+    cd {{cops_squid_hostdir}}
+    docker-compose down
+  tags: [service_dockercompose_stop]

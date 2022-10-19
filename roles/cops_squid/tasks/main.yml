@@ -1,0 +1,14 @@
+- include_role:  {name: corpusops.roles/plugins, public: y}
+- include_role: {name: corpusops.roles/services_virt_docker}
+  tags: [docker_setup]
+- include_role: {name: cops_squid/service_stop}
+  tags: [service, cops_squid_service, cops_squid_service_stop]
+- include_role:  {name: cops_squid/vars, public: y}
+- include_role:  {name: cops_squid/layout, public: y}
+  tags: [layout]
+- include_role:  {name: cops_squid/prerequisites, public: y}
+  tags: [prerequisites]
+- include_role:  {name: cops_squid/configs, public: y}
+  tags: [configs]
+- include_role: {name: cops_squid/service_start}
+  tags: [service, cops_squid_service, cops_squid_service_start]

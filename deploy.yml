@@ -1,0 +1,3 @@
+- hosts: "{{cops_squid_servers|default('all')}}"
+  tasks:
+  - include_role: {name: cops_squid}

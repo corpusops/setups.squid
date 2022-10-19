@@ -1,0 +1,22 @@
+- set_fact:
+    cops_squid_host_dirs: |
+        {% set directories = [] %}
+        {% for cops_squid_volume in cops_squid_volumes %}
+        {% set d = cops_squid_volume.split(':')[0] %}
+        {% set _ = directories.append(d) %}
+        {% endfor %}
+        {% set _ = directories.append(cops_squid_data_volume) %}
+        {{ directories | to_json }}
+- file:
+    path: "{{item}}"
+    mode: "0711"
+    state: directory
+  with_items: "{{cops_squid_host_dirs}}"
+- file:
+    state: directory
+    path: "{{cops_squid_versioned_hostdir}}"
+- file:
+    state: link
+    force: true
+    src: "{{cops_squid_versioned_hostdir}}"
+    path: "{{cops_squid_hostdir}}"

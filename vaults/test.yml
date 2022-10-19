@@ -1,0 +1,12 @@
+squid:
+  hosts:
+    foo.net:
+  vars:
+    cops_squid_conf_ldap_password: "rF5sU4dZ9yS4eJ1d"
+    cops_squid_traefik_password: "8789798789789789"
+    cops_squid_ssl_certificate: "/etc/ssl/certs/somecert_with_key_bundled.crt"
+    cops_squid_hostname: "squid.foo.net"
+    cops_squid_conf_auth: |-
+        auth_param basic program /usr/lib/squid/basic_ldap_auth -b "ou=People,dc=foo" -D "uid=myrobinduser,ou=people,dc=foo" -f "(&(memberOf=cn=makina,ou=group,dc=foo)(objectClass=person)(uid=%s))" -H ldap://ld
+ap.foo.net -W /etc/squid/ldap_password -Z -v3
+        auth_param basic children 5

@@ -1,0 +1,77 @@
+cops_squid_default_docker_env: |-
+  SQUID_VERSION=5.6-22.10_edge
+  COMPOSE_PROJECT_NAME={{cops_squid_compose_project}}
+  SQUID_LISTEN_ADDRESS={{cops_squid_listen_address}}
+  SQUID_LISTEN_INT_ADDRESS={{cops_squid_listen_int_address}}
+  SQUID_LISTEN_HA_PORT={{cops_squid_front_haproxy_port}}
+  SQUID_LISTEN_CONTROL_PORT={{cops_squid_front_control_port}}
+  SQUID_LISTEN_CONTROL_HA_PORT={{cops_squid_front_haproxy_ha_port}}
+  SQUID_LISTEN_PORT={{cops_squid_front_port}}
+  SQUID_DATA_PATH={{cops_squid_data_volume}}/spool
+  SQUID_HA_PATH={{cops_squid_data_volume}}/haproxy
+  SQUID_SSL_CERTIFICATE={{cops_squid_ssl_certificate}}
+cops_squid_listen_address: 0.0.0.0
+cops_squid_listen_int_address: 127.0.0.1
+cops_squid_basedir: /srv/docker/squid
+cops_squid_data_volume: "{{cops_squid_basedir}}/data"
+cops_squid_hostdir: "{{cops_squid_basedir}}/current"
+cops_squid_version: "1"
+cops_squid_traefik_password: "lU2cE3fL3yC6cC8e"
+cops_squid_versioned_hostdir: "{{cops_squid_basedir}}/{{cops_squid_version}}"
+cops_squid_volumes:
+- "{{cops_squid_hostdir}}"
+cops_squid_role_path: "{{role_path|copsf_abspath}}"
+cops_squid_setup_path: "{{playbook_dir}}/setup"
+cops_squid_extra_docker_env: |-
+cops_squid_conf_ldap_password: ""
+cops_squid_conf_pre: ""
+cops_squid_conf_post: ""
+cops_squid_conf_port: "http_port 3128 require-proxy-header"
+cops_squid_conf_auth: |-
+  auth_param basic program /usr/lib/squid/basic_ncsa_auth /etc/squid/squidusers
+  auth_param basic children 5
+  # auth_param basic program /usr/lib/squid/basic_ldap_auth
+cops_squid_conf_log: |-
+  logfile_rotate 0
+  cache_log stdio:/dev/stdout
+  access_log stdio:/dev/stdout
+  cache_store_log stdio:/dev/stdout
+  # debug_options ALL,9
+  # debug_options ALL,1 11,3 20,3
+cops_squid_conf_acls: |-
+  acl Users proxy_auth REQUIRED
+  acl local src 10.0.0.0/8
+  acl local src 172.16.0.0/12
+  acl local src 192.168.0.0/16
+  proxy_protocol_access allow local
+  http_access allow Users
+  http_access deny all
+cops_squid_users: {}
+#  foo: foo4password
+cops_squid_docker_env: |-
+  {{cops_squid_default_docker_env}}
+  {{cops_squid_extra_docker_env}}
+cops_squid_passwdfile: "{{cops_squid_versioned_hostdir}}/conf/squidusers"
+#
+cops_squid_compose_project: "{{cops_squid_basedir|copsf_basename}}"
+cops_squid_dcompose: docker-compose -p {{cops_squid_compose_project}}
+cops_squid_traefik_extra: ""
+cops_squid_stopped_state: stopped
+cops_squid_started_state: started
+cops_squid_stdout: "null"
+cops_squid_stderr: "null"
+cops_squid_front_port: 23568
+cops_squid_front_control_port: 8080
+cops_squid_front_haproxy_port: "{{cops_squid_front_port+1}}"
+cops_squid_front_haproxy_ha_port: "{{cops_squid_front_control_port+1}}"
+corpusops_ms_iptables_registrations_registrations_squid:
+  rules: |-
+    {%- set r = [
+        "iptables -w -t filter -I INPUT -m state --state new -m multiport -p tcp --dports {0} -j ACCEPT".format(cops_squid_front_port),
+        "iptables -w -t filter -I INPUT -m state --state new -m multiport -p tcp --dports {0} -j ACCEPT".format(cops_squid_front_haproxy_port),
+    ] %}
+    {{- r|to_json}}
+cops_squid_ssl_certificate: ""
+cops_squid_use_haproxy: "{{not cops_squid_use_traefik}}"
+cops_squid_use_traefik: true
+

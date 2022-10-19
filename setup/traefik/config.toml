@@ -1,0 +1,4 @@
+tls.stores.default.defaultCertificate={certFile="/ssl.crt",keyFile="/ssl.crt"}
+tcp.services.squid.loadBalancer={proxyProtocol.version=1,servers=[{address="proxy:3128"}]}
+[tcp.routers]
+r={entrypoints=["proxy"],service="squid",tls={},rule="HostSNI(`*`)"}

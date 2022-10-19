@@ -1,0 +1,92 @@
+version: "3.8"
+x-base:
+  x-img: &base
+    env_file: [.env]
+services:
+  log:
+    <<: [ *base ]
+    image: corpusops/rsyslog
+    ports: ["127.0.0.1:${LOG_PORT:-1514}:10514"]
+    volumes: ["logs:/var/log/docker"]
+{%- if cops_squid_use_traefik %}
+  lb:
+    <<: [ *base ]
+    depends_on: [log, proxy]
+    logging:
+      driver: "syslog"
+      options:
+        syslog-address: "tcp://127.0.0.1:${LOG_PORT:-1514}"
+        tag: "lb"
+    image: "corpusops/traefik:v2.9"
+    entrypoint:
+    - bash
+    - "-exc"
+    - |-
+      for i in /ssl.crt;do if [ -e $$i.in ];then cp $$i.in $$i;fi;done
+      exec traefik
+    volumes:
+    - "./traefik/:/etc/traefik"
+{%- if cops_squid_ssl_certificate %}
+    - "${SQUID_SSL_CERTIFICATE}:/ssl.crt.in:ro"
+{%- endif %}
+    ports:
+    - "${SQUID_LISTEN_ADDRESS:-127.0.0.1}:${SQUID_LISTEN_PORT:-8080}:80"
+    - "${SQUID_LISTEN_INT_ADDRESS:-127.0.0.1}:${SQUID_LISTEN_CONTROL_PORT:-8081}:8080"
+{%- endif %}
+{%- if cops_squid_use_haproxy %}
+  haproxy:
+    <<: [ *base ]
+    depends_on: [log, proxy]
+    logging:
+      driver: "syslog"
+      options:
+        syslog-address: "tcp://127.0.0.1:${LOG_PORT:-1514}"
+        tag: "haproxy"
+    image: "haproxy:lts"
+    user: root
+    entrypoint:
+    - sh
+    - "-exc"
+    - |-
+      rm -rfv ~haproxy/ssl || true
+      cp -rf /data.d/* ~haproxy
+      chown -Rfv haproxy ~haproxy
+      exec haproxy -W -db -f /usr/local/etc/haproxy/haproxy.cfg
+    volumes:
+    - "./haproxy/haproxy.cfg/:/usr/local/etc/haproxy/haproxy.cfg"
+    - "$SQUID_HA_PATH:/data.d/"
+{%- if cops_squid_ssl_certificate %}
+    - "${SQUID_SSL_CERTIFICATE}:/data.d/ssl/c.crt:ro"
+{%- endif %}
+    ports:
+    - "${SQUID_LISTEN_ADDRESS:-127.0.0.1}:${SQUID_LISTEN_HA_PORT:-8080}:80"
+    - "${SQUID_LISTEN_INT_ADDRESS:-127.0.0.1}:${SQUID_LISTEN_HA_CONTROL_PORT:-8081}:8080"
+{%- endif %}
+  proxy:
+    <<: [ *base ]
+    depends_on: [log]
+    logging:
+      driver: "syslog"
+      options:
+        syslog-address: "tcp://127.0.0.1:${LOG_PORT:-1514}"
+        tag: "squid"
+    image: "ubuntu/squid:${SQUID_VERSION}"
+    entrypoint:
+    - bash
+    - "-exc"
+    - |-
+      for i in /etc/squid/ldap_password;do if [ -e $$i ];then cp $$i.in $$i;fi;done
+      cat >~proxy/ldaprc <<EOF
+      TLS_CACERT  /etc/ssl/certs/ca-certificates.crt
+      EOF
+      chown     proxy /dev/stdout
+      chown -Rf proxy /etc/squid
+      exec entrypoint.sh -f /etc/squid/squid.conf -NYC 2>&1
+    volumes:
+    - ./conf:/etc/squid
+    - ./conf/conf.d:/etc/squid/conf.d
+    - "$SQUID_DATA_PATH:/var/spool/squid"
+    ports:
+    - "${SQUID_LISTEN_INT_ADDRESS:-127.0.0.1}:${SQUID_LISTEN_PROXY_PORT:-8082}:3128"
+volumes:
+  logs:
